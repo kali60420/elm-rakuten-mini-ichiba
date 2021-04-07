@@ -1,0 +1,3 @@
+#!/bin/bash
+npx surge build/normal    rj7b6.surge.sh
+npx surge build/dashboard z4uqv.surge.sh

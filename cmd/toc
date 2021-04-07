@@ -1,0 +1,4 @@
+#!/bin/bash
+grep '^\-\-|' $1 | sed 's/--/-- /' | pbcopy
+pbpaste
+printf "\nThe Table of Content has been copied to the clipboard\n\n"
