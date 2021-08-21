@@ -41,7 +41,7 @@ These characteristics make the code robust, performant, and simpler to comprehen
 
 * [Mini-Ichiba](https://rj7b6.surge.sh)
 * [Dashboard](https://z4uqv.surge.sh)
-* [Code (Ellie)](https://ellie-app.com/cQC6cHMbJG9a1)
+* [Code (Ellie)](https://ellie-app.com/f4LmXfNShbfa1)
 * [Code (git)](https://tinyurl.com/83pnwzt3)
 
 ## Prerequisites

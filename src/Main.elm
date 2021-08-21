@@ -3,6 +3,8 @@ port module Main exposing (..)
 import Browser
 import Browser.Dom
 import Codec
+import Color
+import Color.Convert
 import Element.WithContext exposing (..)
 import Element.WithContext.Background as Background
 import Element.WithContext.Border as Border
@@ -17,9 +19,10 @@ import Http
 import Json.Decode
 import Process
 import QRCode
-import R10.Svg.Logos
 import Regex
 import Set
+import Svg
+import Svg.Attributes
 import Task
 import Url
 import Url.Builder
@@ -279,7 +282,7 @@ configuration =
     , qrCodeContent =
         [ ( "Mini-Ichiba", "https://rj7b6.surge.sh" )
         , ( "Dashboard", "https://z4uqv.surge.sh" )
-        , ( "Code (Ellie)", "https://ellie-app.com/cQC6cHMbJG9a1" )
+        , ( "Code (Ellie)", "https://ellie-app.com/f4LmXfNShbfa1" )
 
         -- https://git.rakuten-it.com/projects/ELM/repos/elm-rakuten-mini-ichiba/browse
         , ( "Code (git)", "https://tinyurl.com/83pnwzt3" )
@@ -1227,6 +1230,81 @@ atomTagNumber attrs usePrimaryColor quantity =
 
 
 
+--|     atomLogo
+
+
+atomLogo : List (Attribute msg) -> Color -> Int -> Element msg
+atomLogo attrs cl size =
+    wrapperWithViewbox attrs
+        "0 0 166 50"
+        size
+        [ Svg.path
+            [ cl
+                |> toRgb
+                |> (\rgba -> Color.rgba rgba.red rgba.green rgba.blue rgba.alpha)
+                |> Color.Convert.colorToCssRgba
+                |> Svg.Attributes.fill
+            , Svg.Attributes.d "M41.2 49.4l92.3-8H33.2l8 8zm1.3-14.3v1.2h6.2V9.1h-6.2v1.2a10 10 0 0 0-5.8-1.9c-7 0-12.4 6.4-12.4 14.3S29.6 37 36.7 37c2.3 0 4-.7 5.8-1.9zM30.7 22.7c0-4.3 2.5-7.7 6-7.7s5.9 3.4 5.9 7.7c0 4.3-2.5 7.7-5.9 7.7-3.5 0-6-3.4-6-7.7zm56 14.3c3 0 5.3-1.7 5.3-1.7v1h6.2V9.1H92v16c0 3-2.1 5.5-5.1 5.5s-5.1-2.5-5.1-5.5v-16h-6.2v16c0 6.6 4.5 11.9 11.1 11.9zm68.2-28.6c-3 0-5.3 1.7-5.3 1.7v-1h-6.2v27.2h6.2v-16c0-3 2.1-5.5 5.1-5.5s5.1 2.5 5.1 5.5v16h6.2v-16c0-6.6-4.5-11.9-11.1-11.9zM22.4 14c0-6.5-5.3-11.7-11.7-11.7H0v34h6.5V25.8h4.6L19 36.3h8.1l-9.6-12.7c3-2.1 4.9-5.6 4.9-9.6zm-11.7 5.3H6.5V8.7h4.2c2.9 0 5.3 2.4 5.3 5.3s-2.4 5.3-5.3 5.3zm92.9 8c0 6.1 4.6 9.7 9.2 9.7a13 13 0 0 0 6-1.7l-4-5.4c-.6.4-1.3.7-2.1.7-1 0-2.9-.8-2.9-3.3V15.6h5.3V9.1h-5.3V2.3h-6.2v6.8h-3.3v6.5h3.3v11.7zm-45.1-2.2l9.2 11.2h8.6L64 21.8 74.6 9.1H66l-7.5 9.5V0h-6.3v36.3h6.3V25.1zm70.6-16.7c-7.2 0-12.3 6.3-12.3 14.3 0 8.4 6.4 14.3 12.9 14.3 3.3 0 7.4-1.1 10.9-6.1l-5.5-3.2c-4.2 6.2-11.3 3.1-12.1-3.2h17.8c1.7-9.7-4.7-16.1-11.7-16.1zm-5.7 10.8c1.3-6.4 9.9-6.8 11.1 0h-11.1z"
+            ]
+            []
+        ]
+
+
+wrapperWithViewbox : List (Attribute msg) -> String -> Int -> List (Svg.Svg msg) -> Element msg
+wrapperWithViewbox attrs viewbox size listSvg =
+    el attrs <| html <| wrapperWithViewbox_ viewbox size listSvg
+
+
+wrapperWithViewbox_ : String -> Int -> List (Svg.Svg msg) -> Svg.Svg msg
+wrapperWithViewbox_ viewbox ySize listSvg =
+    Svg.svg
+        ([ Html.Attributes.attribute "xmlns" "http://www.w3.org/2000/svg"
+         , Html.Attributes.attribute "xmlns:xlink" "http://www.w3.org/1999/xlink"
+         , Svg.Attributes.version "1.1"
+         , Svg.Attributes.preserveAspectRatio "xMinYMin slice"
+         , Svg.Attributes.viewBox viewbox
+
+         -- This fix a bug in IE11:
+         -- https://stackoverflow.com/questions/29393144/how-to-prevent-svg-elements-from-gaining-focus-with-tabs-in-ie11
+         --
+         , Html.Attributes.attribute "focusable" "false"
+         ]
+            ++ svgSize_ viewbox ySize
+        )
+        listSvg
+
+
+svgSize_ : String -> Int -> List (Svg.Attribute msg)
+svgSize_ viewbox ySize =
+    --
+    -- IE11 is very picky about knowing all sizes of a SVG so
+    -- here we calculate the width starting from the height
+    -- using the viewbox.
+    --
+    case String.split " " viewbox of
+        [ x, y, dx, dy ] ->
+            Maybe.withDefault [ Svg.Attributes.height <| String.fromInt ySize ] <|
+                Maybe.map4
+                    (\_ _ dx_ dy_ ->
+                        let
+                            xSize : Float
+                            xSize =
+                                (dx_ * toFloat ySize) / dy_
+                        in
+                        [ Svg.Attributes.height <| String.fromInt ySize
+                        , Svg.Attributes.width <| String.fromFloat xSize
+                        ]
+                    )
+                    (String.toFloat x)
+                    (String.toFloat y)
+                    (String.toFloat dx)
+                    (String.toFloat dy)
+
+        _ ->
+            [ Svg.Attributes.height <| String.fromInt ySize ]
+
+
+
 --|     atomIcon
 
 
@@ -2084,8 +2162,7 @@ orgHeader page =
                                         _ ->
                                             [ inFront <|
                                                 el [ centerX, moveUp 10 ] <|
-                                                    element <|
-                                                        R10.Svg.Logos.rakuten [] c.palette.primary 28
+                                                    atomLogo [] c.palette.primary 28
                                             ]
                                    )
                             )
